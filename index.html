@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+  <head>
+
+    <script
+    src="http://code.jquery.com/jquery-3.3.1.min.js"
+    integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+    crossorigin="anonymous"></script>
+
+<!-- <script src="/main.js" type="text/javascript"></script> -->
+
+    <title>Socket.IO chat</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #status { background: #eee;}
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+    </style>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+
+    <form id="chat-form" action="">
+
+      <input id="chat_input" onkeydown="keydownFunction()" autocomplete="off" /><button>Send</button>
+      <br/>
+      <div id="status"></div>
+    </form>
+
+    <script
+  src="http://code.jquery.com/jquery-3.3.1.min.js"
+  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  crossorigin="anonymous"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- <script src="/main.js"></script> -->
+
+    <script>
+
+    var socket = io();
+    var typing = false;
+    var timeout = undefined;
+
+
+    socket.on('connect', function(data) {
+      $('#messages').append($('<li>').text('Connected to chat'));
+      nickname = prompt("What is your nickname?");
+      socket.emit('join', nickname);
+    });
+
+    $('#chat-form').submit(function() {
+      var msg = $('#chat_input').val();
+      socket.emit('chat_message', msg);
+
+      $('#messages').append($('<li>').text('me: ' + msg));
+      $('#chat_input').val('');
+      return false;
+    });
+
+    socket.on('chat_message', function(msg) {
+      $('#messages').append($('<li>').text(msg));
+    });
+
+    socket.on('login', function (data) {
+      var message = "Welcome to Chat...";
+      $('#messages').append($('<li>').text(message));
+
+    socket.on('user joined', function (data) {
+      $('#messages').append($('<li>').text(data.username+ ' joined the chat'));
+    });
+
+    socket.on('user left', function (data) {
+      $('#messages').append($('<li>').text(data.username+ ' left the chat'));
+   });
+
+    });
+
+    socket.on('typingMessage', function (data) {
+    $("#status").html(data.user + " is typing");
+  });
+
+  socket.on('noLongerTypingMessage', function (data) {
+    $("#status").html(data.user + " stopped typing");
+    setTimeout(function () {
+                    $("#status").html('');
+                }, 3000);
+  });
+
+    socket.on('disconnect', function () {
+    log('you have been disconnected');
+  });
+
+
+  function timeoutFunction(){
+    typing = false;
+    socket.emit('noLongerTypingMessage');
+  }
+
+  function keydownFunction(){
+
+    if(typing == false) {
+      typing = true;
+      socket.emit('typingMessage');
+      timeout = setTimeout(timeoutFunction, 300);
+    } else {
+      clearTimeout(timeout);
+      timeout = setTimeout(timeoutFunction, 300);
+    }
+
+  }
+
+    </script>
+
+  </body>
+
+</html>
